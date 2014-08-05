@@ -1255,19 +1255,7 @@
         "category": "Error",
         "code": -9999999
     },
-    "'{0}' expected.": {
-        "category": "Error",
-        "code": -9999999
-    },
-    "Identifier expected.": {
-        "category": "Error",
-        "code": -9999999
-    },
     "String literal expected.": {
-        "category": "Error",
-        "code": -9999999
-    },
-    "Type expected.": {
         "category": "Error",
         "code": -9999999
     },
@@ -1280,10 +1268,6 @@
         "code": -9999999
     },
     "'super' must be followed by argument list or member access.": {
-        "category": "Error",
-        "code": -9999999
-    },
-    "Expression expected.": {
         "category": "Error",
         "code": -9999999
     },
@@ -1356,10 +1340,6 @@
         "code": -9999999
     },
     "Constructors for derived classes must contain a 'super' call.": {
-        "category": "Error",
-        "code": -9999999
-    },
-    "Only public methods of the base class are accessible via the 'super' keyword": {
         "category": "Error",
         "code": -9999999
     },
