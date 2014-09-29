@@ -5277,21 +5277,8 @@ module ts {
             forEach(file.statements, node => {
                 if (node.kind === SyntaxKind.ImportDeclaration && (<ImportDeclaration>node).externalModuleName) {
                     var nameLiteral = (<ImportDeclaration>node).externalModuleName;
-                    var moduleName = nameLiteral.text;
-                    if (moduleName) {
-                        var searchPath = basePath;
-                        while (true) {
-                            var searchName = normalizePath(combinePaths(searchPath, moduleName));
-                            if (findModuleSourceFile(searchName + ".ts", nameLiteral) || findModuleSourceFile(searchName + ".d.ts", nameLiteral)) {
-                                break;
-                            }
-
-                            var parentPath = getDirectoryPath(searchPath);
-                            if (parentPath === searchPath) {
-                                break;
-                            }
-                            searchPath = parentPath;
-                        }
+                    if (nameLiteral.text) {
+                        searchForImportedModule(nameLiteral.text, basePath, nameLiteral);
                     }
                 }
                 else if (node.kind === SyntaxKind.ModuleDeclaration && (<ModuleDeclaration>node).name.kind === SyntaxKind.StringLiteral && (node.flags & NodeFlags.Ambient || isDeclarationFile(file))) {
@@ -5318,6 +5305,68 @@ module ts {
                     });
                 }
             });
+
+            function searchForImportedModule(moduleName: string, searchPath: string, nameLiteral: LiteralExpression) {
+                while (true) {
+                    var searchNames = [
+                        normalizePath(combinePaths(searchPath, moduleName)),
+                    ];
+                    if (options.module == ModuleKind.CommonJS) {
+                        searchNames.push(normalizePath(combinePaths(combinePaths(searchPath, 'node_modules'), moduleName)));
+                        searchNames.push(normalizePath(combinePaths(combinePaths(searchPath, 'typings'), moduleName)));
+                    }
+
+                    var foundModule = forEach(searchNames, searchName => {
+                        return findModuleSourceFile(searchName + ".ts", nameLiteral)
+                            || findModuleSourceFile(searchName + ".d.ts", nameLiteral)
+                            || findModuleSourceDirectory(searchName, nameLiteral);
+                    });
+
+                    if (foundModule) {
+                        break
+                    }
+
+                    var parentPath = getDirectoryPath(searchPath);
+                    if (parentPath === searchPath) {
+                        break;
+                    }
+                    var currentDirectory = searchPath.substr(parentPath.length);
+                    if (options.module == ModuleKind.CommonJS && (currentDirectory == 'node_modules' || currentDirectory == 'typings')) {
+                        break;
+                    }
+                    searchPath = parentPath;
+                }
+            }
+
+            function findModuleSourceDirectory(directory: string, nameLiteral: LiteralExpression) {
+                var filename = combinePaths(directory, 'index');
+
+                var pkgPath = host.getCanonicalFileName(combinePaths(directory, 'package.json'));
+                var pkgSourceFile: SourceFile;
+                if (hasProperty(filesByName, pkgPath)) {
+                    pkgSourceFile = filesByName[filename];
+                }
+                else {
+                    pkgSourceFile = filesByName[pkgPath] = host.getSourceFile(pkgPath, options.target);
+                }
+                if (pkgSourceFile) {
+                    var pkg = JSON.parse(pkgSourceFile.text);
+                    if (pkg && pkg.typescript) {
+                        if (pkg.typescript.main) {
+                            filename = combinePaths(directory, pkg.typescript.main);
+                        }
+                        else if (pkg.typescript.definition) {
+                            filename = combinePaths(directory, pkg.typescript.definition);
+                        }
+                    }
+                }
+
+                if (fileExtensionIs(filename, ".ts")) {
+                    return findModuleSourceFile(filename, nameLiteral);
+                } else {
+                    return findModuleSourceFile(filename + ".ts", nameLiteral) || findModuleSourceFile(filename + ".d.ts", nameLiteral);
+                }
+            }
 
             function findModuleSourceFile(filename: string, nameLiteral: LiteralExpression) {
                 return findSourceFile(filename, /* isDefaultLib */ false, file, nameLiteral.pos, nameLiteral.end - nameLiteral.pos);

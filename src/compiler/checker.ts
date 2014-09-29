@@ -72,6 +72,7 @@ module ts {
         var emptySymbols: SymbolTable = {};
 
         var compilerOptions = program.getCompilerOptions();
+        var compilerHost = program.getCompilerHost();
 
         var checker: TypeChecker = {
             getProgram: () => program,
@@ -557,13 +558,12 @@ module ts {
                     return getResolvedExportSymbol(symbol);
                 }
             }
-            while (true) {
+            var sourceFile: SourceFile;
+            if (isRelative) {
                 var filename = normalizePath(combinePaths(searchPath, moduleName));
-                var sourceFile = program.getSourceFile(filename + ".ts") || program.getSourceFile(filename + ".d.ts");
-                if (sourceFile || isRelative) break;
-                var parentPath = getDirectoryPath(searchPath);
-                if (parentPath === searchPath) break;
-                searchPath = parentPath;
+                sourceFile = program.getSourceFile(filename + ".ts") || program.getSourceFile(filename + ".d.ts");
+            } else {
+                sourceFile = searchForExternalModule(moduleName, searchPath);
             }
             if (sourceFile) {
                 if (sourceFile.symbol) {
@@ -573,6 +573,63 @@ module ts {
                 return;
             }
             error(moduleLiteral, Diagnostics.Cannot_find_external_module_0, moduleName);
+        }
+
+        function searchForExternalModule(moduleName: string, searchPath: string) {
+            while (true) {
+                var searchNames = [
+                    normalizePath(combinePaths(searchPath, moduleName)),
+                ];
+                if (compilerOptions.module == ModuleKind.CommonJS) {
+                    searchNames.push(normalizePath(combinePaths(combinePaths(searchPath, 'node_modules'), moduleName)));
+                    searchNames.push(normalizePath(combinePaths(combinePaths(searchPath, 'typings'), moduleName)));
+                }
+
+                var sourceFile = forEach(searchNames, searchName => {
+                    return program.getSourceFile(searchName + ".ts")
+                        || program.getSourceFile(searchName + ".d.ts")
+                        || getSourceFileFromDirectory(searchName);
+                });
+
+                if (sourceFile) {
+                    return sourceFile;
+                }
+
+                var parentPath = getDirectoryPath(searchPath);
+                if (parentPath === searchPath) {
+                    break;
+                }
+                var currentDirectory = searchPath.substr(parentPath.length);
+                if (compilerOptions.module == ModuleKind.CommonJS && (currentDirectory == 'node_modules' || currentDirectory == 'typings')) {
+                    break;
+                }
+                searchPath = parentPath;
+            }
+            return null;
+        }
+
+        function getSourceFileFromDirectory(directory: string) {
+            var filename = combinePaths(directory, 'index');
+
+            var pkgPath = combinePaths(directory, 'package.json');
+            var pkgSourceFile = program.getSourceFile(pkgPath);
+            if (pkgSourceFile) {
+                var pkg = JSON.parse(pkgSourceFile.text);
+                if (pkg && pkg.typescript) {
+                    if (pkg.typescript.main) {
+                        filename = combinePaths(directory, pkg.typescript.main);
+                    }
+                    else if (pkg.typescript.definition) {
+                        filename = combinePaths(directory, pkg.typescript.definition);
+                    }
+                }
+            }
+
+            if (fileExtensionIs(filename, ".ts")) {
+                return program.getSourceFile(filename);
+            } else {
+                return program.getSourceFile(filename + ".ts") || program.getSourceFile(filename + ".d.ts");
+            }
         }
 
         function getResolvedExportSymbol(moduleSymbol: Symbol): Symbol {
