@@ -1,0 +1,12 @@
+{
+    "scenario": "typings",
+    "projectRoot": "tests/cases/projects/typings",
+    "inputFiles": [
+        "main.ts"
+    ],
+    "baselineCheck": true,
+    "runTest": true,
+    "moduleKinds": [
+        "CommonJS"
+    ]
+}

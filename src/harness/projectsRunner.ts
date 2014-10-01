@@ -17,6 +17,7 @@ interface ProjectRunnerTestCase {
     baselineCheck?: boolean; // Verify the baselines of output files, if this is false, we will write to output to the disk but there is no verification of baselines
     runTest?: boolean; // Run the resulting test
     bug?: string; // If there is any bug associated with this test case
+    moduleKinds?: string[]; // Which ModuleKinds should be tested against (defaults to all)
 }
 
 interface ProjectRunnerTestCaseResolutionInfo extends ProjectRunnerTestCase {
@@ -379,45 +380,58 @@ class ProjectRunner extends RunnerBase {
                 }
             }
 
-            // Compile using node
-            var nodeCompilerResult = batchCompilerProjectTestCase(ts.ModuleKind.CommonJS);
-            verifyCompilerResults(nodeCompilerResult);
+            (testCase.moduleKinds || ['CommonJS', 'AMD']).forEach(inputModuleKind => {
+                var moduleKind: ts.ModuleKind;
+                switch (inputModuleKind) {
+                    case 'CommonJS':
+                        moduleKind = ts.ModuleKind.CommonJS
+                        break;
 
-            // Compile using amd
-            var amdCompilerResult = batchCompilerProjectTestCase(ts.ModuleKind.AMD);
-            verifyCompilerResults(amdCompilerResult);
+                    case 'AMD':
+                        moduleKind = ts.ModuleKind.AMD
+                        break;
+                }
+                var compilerResult = batchCompilerProjectTestCase(moduleKind);
+                verifyCompilerResults(compilerResult);
 
-            if (testCase.runTest) {
-                //TODO(ryanca/danquirk): Either support this or remove this option from the interface as well as test case json files
-                // Node results
-                assert.isTrue(!nodeCompilerResult.nonSubfolderDiskFiles, "Cant run test case that generates parent folders/absolute path");
-                //it("runs without error: (" + moduleNameToString(nodeCompilerResult.moduleKind) + ')', function (done: any) {
-                //    Exec.exec("node.exe", ['"' + baseLineLocalPath(nodeCompilerResult.outputFiles[0].diskRelativeName, nodeCompilerResult.moduleKind) + '"'], function (res) {
-                //        Harness.Assert.equal(res.stdout, "");
-                //        Harness.Assert.equal(res.stderr, "");
-                //        done();
-                //    })
-                //});
+                if (testCase.runTest) {
+                    switch (moduleKind) {
+                        case ts.ModuleKind.CommonJS:
+                            //TODO(ryanca/danquirk): Either support this or remove this option from the interface as well as test case json files
+                            // Node results
+                            assert.isTrue(!compilerResult.nonSubfolderDiskFiles, "Cant run test case that generates parent folders/absolute path");
+                            //it("runs without error: (" + moduleNameToString(nodeCompilerResult.moduleKind) + ')', function (done: any) {
+                            //    Exec.exec("node.exe", ['"' + baseLineLocalPath(nodeCompilerResult.outputFiles[0].diskRelativeName, nodeCompilerResult.moduleKind) + '"'], function (res) {
+                            //        Harness.Assert.equal(res.stdout, "");
+                            //        Harness.Assert.equal(res.stderr, "");
+                            //        done();
+                            //    })
+                            //});
+                            break;
 
-                // Amd results
-                assert.isTrue(!amdCompilerResult.nonSubfolderDiskFiles, "Cant run test case that generates parent folders/absolute path");
-                //var amdDriverTemplate = "var requirejs = require('../r.js');\n\n" +
-                //    "requirejs.config({\n" +
-                //    "    nodeRequire: require\n" +
-                //    "});\n\n" +
-                //    "requirejs(['{0}'],\n" +
-                //    "function ({0}) {\n" +
-                //    "});";
-                //var moduleName = baseLineLocalPath(amdCompilerResult.outputFiles[0].diskRelativeName, amdCompilerResult.moduleKind).replace(/\.js$/, "");
-                //sys.writeFile(testCase.projectRoot + '/driver.js', amdDriverTemplate.replace(/\{0}/g, moduleName));
-                //it("runs without error (" + moduleNameToString(amdCompilerResult.moduleKind) + ')', function (done: any) {
-                //    Exec.exec("node.exe", ['"' + testCase.projectRoot + '/driver.js"'], function (res) {
-                //        Harness.Assert.equal(res.stdout, "");
-                //        Harness.Assert.equal(res.stderr, "");
-                //        done();
-                //    })
-                //});
-            }
+                        case ts.ModuleKind.AMD:
+                            // Amd results
+                            assert.isTrue(!compilerResult.nonSubfolderDiskFiles, "Cant run test case that generates parent folders/absolute path");
+                            //var amdDriverTemplate = "var requirejs = require('../r.js');\n\n" +
+                            //    "requirejs.config({\n" +
+                            //    "    nodeRequire: require\n" +
+                            //    "});\n\n" +
+                            //    "requirejs(['{0}'],\n" +
+                            //    "function ({0}) {\n" +
+                            //    "});";
+                            //var moduleName = baseLineLocalPath(amdCompilerResult.outputFiles[0].diskRelativeName, amdCompilerResult.moduleKind).replace(/\.js$/, "");
+                            //sys.writeFile(testCase.projectRoot + '/driver.js', amdDriverTemplate.replace(/\{0}/g, moduleName));
+                            //it("runs without error (" + moduleNameToString(amdCompilerResult.moduleKind) + ')', function (done: any) {
+                            //    Exec.exec("node.exe", ['"' + testCase.projectRoot + '/driver.js"'], function (res) {
+                            //        Harness.Assert.equal(res.stdout, "");
+                            //        Harness.Assert.equal(res.stderr, "");
+                            //        done();
+                            //    })
+                            //});
+                            break;
+                    }
+                }
+            });
         });
     }
 }

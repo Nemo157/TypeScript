@@ -1,0 +1,12 @@
+{
+    "scenario": "nodeModule",
+    "projectRoot": "tests/cases/projects/nodeModule",
+    "inputFiles": [
+        "main.ts"
+    ],
+    "baselineCheck": true,
+    "runTest": true,
+    "moduleKinds": [
+        "CommonJS"
+    ]
+}
