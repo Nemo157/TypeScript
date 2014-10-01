@@ -1,0 +1,12 @@
+{
+    "scenario": "typings-packageJSON",
+    "projectRoot": "tests/cases/projects/typings-packageJSON",
+    "inputFiles": [
+        "main.ts"
+    ],
+    "baselineCheck": true,
+    "runTest": true,
+    "moduleKinds": [
+        "CommonJS"
+    ]
+}
