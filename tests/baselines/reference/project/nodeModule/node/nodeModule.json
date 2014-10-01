@@ -1,0 +1,18 @@
+{
+    "scenario": "nodeModule",
+    "projectRoot": "tests/cases/projects/nodeModule",
+    "inputFiles": [
+        "main.ts"
+    ],
+    "baselineCheck": true,
+    "runTest": true,
+    "resolvedInputFiles": [
+        "lib.d.ts",
+        "node_modules/dependency/index.ts",
+        "main.ts"
+    ],
+    "emittedFiles": [
+        "node_modules/dependency/index.js",
+        "main.js"
+    ]
+}

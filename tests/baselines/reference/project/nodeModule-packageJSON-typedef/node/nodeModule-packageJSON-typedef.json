@@ -1,0 +1,17 @@
+{
+    "scenario": "nodeModule-packageJSON-typedef",
+    "projectRoot": "tests/cases/projects/nodeModule-packageJSON-typedef",
+    "inputFiles": [
+        "main.ts"
+    ],
+    "baselineCheck": true,
+    "runTest": true,
+    "resolvedInputFiles": [
+        "lib.d.ts",
+        "node_modules/dependency/src/main.d.ts",
+        "main.ts"
+    ],
+    "emittedFiles": [
+        "main.js"
+    ]
+}
