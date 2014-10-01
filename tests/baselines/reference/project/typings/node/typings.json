@@ -1,0 +1,17 @@
+{
+    "scenario": "typings",
+    "projectRoot": "tests/cases/projects/typings",
+    "inputFiles": [
+        "main.ts"
+    ],
+    "baselineCheck": true,
+    "runTest": true,
+    "resolvedInputFiles": [
+        "lib.d.ts",
+        "typings/dependency/index.d.ts",
+        "main.ts"
+    ],
+    "emittedFiles": [
+        "main.js"
+    ]
+}
